@@ -3,6 +3,17 @@ import { buscarUsuarioPeloNome, criarUsuario, criarVeiculo, listarTodosUsuarios,
 import { buscarUsuarioPeloNome as buscarUsuarioPeloNomeQb, listarTodosUsuarios as listarTodosUsuariosQb, listarTodosUsuariosComVeiculos } from "./query-builder";
 import { User } from "./entity/User"
 import { Vehicle } from "./entity/Vehicle"
+import { UserRepository } from "./repository";
+
+async function repository() {
+    console.log("buscando usuario via repository...");
+    const usr = await UserRepository.findBy({ firstName: "Timber" });
+    console.log(usr);
+
+    console.log("chamando métodos de extensão");
+    const usrs = await UserRepository.findAllByFirstAndLastName("Timber", "Saw");
+    console.log(usrs);
+}
 
 async function queryBuilder() {
     console.log("buscando usuario via query builder...");
@@ -58,6 +69,11 @@ AppDataSource.initialize().then(async () => {
     console.log("Using query builder...")
     console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
     await queryBuilder();
+
+    console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+    console.log("Using repository...")
+    console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+    await repository();
 
     console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
     console.log("Cleaning all resources...")
