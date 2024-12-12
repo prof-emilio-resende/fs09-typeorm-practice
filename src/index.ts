@@ -1,59 +1,23 @@
 import { AppDataSource } from "./data-source"
+import { buscarUsuarioPeloNome, criarUsuario, criarVeiculo, listarTodosUsuarios, listarTodosVeiculos, removerUsuario, removerUsuarioPeloNome } from "./entity-mgr"
+import { buscarUsuarioPeloNome as buscarUsuarioPeloNomeQb, listarTodosUsuarios as listarTodosUsuariosQb, listarTodosUsuariosComVeiculos } from "./query-builder";
 import { User } from "./entity/User"
 import { Vehicle } from "./entity/Vehicle"
 
-async function criarUsuario(user: User) {
-    await AppDataSource.manager.save(user)
-    console.log("Saved a new user with id: " + user.id)
+async function queryBuilder() {
+    console.log("buscando usuario via query builder...");
+    const u = await buscarUsuarioPeloNomeQb("Timber");
+    console.log(u);
+
+    console.log("buscando todos os usuarios + veiculos via query builder...");
+    const usrs = await listarTodosUsuariosQb();
+    console.log(usrs);
+
+    console.log("buscando todos os usuarios COM veiculos via query builder...");
+    const usrsVeh = await listarTodosUsuariosComVeiculos();
+    console.log(usrsVeh);
 }
 
-async function criarVeiculo(veiculo: Vehicle) {
-    await AppDataSource.manager.save(veiculo);
-    console.log("Saved a new vehicle with id: " + veiculo.id)
-}
-
-async function buscarUsuarioPeloNome(name: string) {
-    console.log(`Searching user from db with name [${name}]...`)
-    const usr = await AppDataSource.manager.findOneBy(User, {
-        firstName: name
-    });
-    if(usr != null && usr.id > 0) {
-        return usr;
-    }
-
-    throw Error("Usuario nao encontrado!");
-}
-
-async function listarTodosUsuarios() {
-    console.log("Loading users from the database...")
-    const users = await AppDataSource.manager.find(User, {
-        relations: {
-            fleet: true
-        },
-        relationLoadStrategy: "query"
-    })
-    console.log("Loaded users: ", users)
-    return users;
-}
-
-async function removerUsuario(user: User) {
-    console.log("Deleting user from db...")
-    await AppDataSource.manager.delete(User, user.id);
-    console.log("user deleted: ", user)
-}
-
-async function removerUsuarioPeloNome(name: string) {
-    console.log(`Deleting user from db with name [${name}]...`)
-    const usr = await buscarUsuarioPeloNome(name);
-    await removerUsuario(usr);
-}
-
-async function listarTodosVeiculos() {
-    console.log("Loading vehicles from the database...")
-    const vehicles = await AppDataSource.manager.find(Vehicle)
-    console.log("Loaded vehicles: ", vehicles)
-    return vehicles;
-}
 
 AppDataSource.initialize().then(async () => {
 
@@ -77,6 +41,12 @@ AppDataSource.initialize().then(async () => {
 
     await listarTodosVeiculos();
 
+    const user2 = new User()
+    user2.firstName = "Emilio"
+    user2.lastName = "Resende"
+    user2.age = 36
+    await criarUsuario(user2);
+
     const allUsersWithVehicles = await listarTodosUsuarios();
     (allUsersWithVehicles).forEach(u => {
         console.log('usuario: ' + u.firstName);
@@ -85,10 +55,15 @@ AppDataSource.initialize().then(async () => {
     })
 
     console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+    console.log("Using query builder...")
+    console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+    await queryBuilder();
+
+    console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
     console.log("Cleaning all resources...")
     console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
 
     await removerUsuarioPeloNome("Timber");
-    allUsers.forEach(async u => await removerUsuario(u));
+    listarTodosUsuarios().then(u => u.forEach(async u => await removerUsuario(u)));
 
 }).catch(error => console.log(error))
